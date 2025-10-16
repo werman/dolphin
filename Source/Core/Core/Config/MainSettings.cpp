@@ -495,6 +495,8 @@ const Info<bool> MAIN_GAMELIST_COLUMN_TAGS{{System::Main, "GameList", "ColumnTag
 const Info<bool> MAIN_FIFOPLAYER_LOOP_REPLAY{{System::Main, "FifoPlayer", "LoopReplay"}, true};
 const Info<bool> MAIN_FIFOPLAYER_EARLY_MEMORY_UPDATES{
     {System::Main, "FifoPlayer", "EarlyMemoryUpdates"}, false};
+const Info<int> MAIN_FIFOPLAYER_REPEAT_FIRST_FRAME_COUNT{
+    {System::Main, "FifoPlayer", "RepeatFirstFrameCount"}, 0};
 
 // Main.AutoUpdate
 

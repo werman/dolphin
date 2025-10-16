@@ -186,6 +186,8 @@ private:
   bool m_Loop = true;
   // If enabled then all memory updates happen at once before the first frame
   bool m_EarlyMemoryUpdates = false;
+  int m_RepeatFirstFrameCount = 0;
+  int m_RepeatFirstFramePlayed = 0;
 
   u32 m_CurrentFrame = 0;
   u32 m_FrameRangeStart = 0;

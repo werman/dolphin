@@ -312,6 +312,7 @@ extern const Info<bool> MAIN_GAMELIST_COLUMN_TAGS;
 
 extern const Info<bool> MAIN_FIFOPLAYER_LOOP_REPLAY;
 extern const Info<bool> MAIN_FIFOPLAYER_EARLY_MEMORY_UPDATES;
+extern const Info<int> MAIN_FIFOPLAYER_REPEAT_FIRST_FRAME_COUNT;
 
 // Main.AutoUpdate
 

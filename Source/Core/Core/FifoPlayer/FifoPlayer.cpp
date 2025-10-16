@@ -226,6 +226,7 @@ public:
     m_parent->m_system.GetCPU().SetStepping(false);
 
     m_parent->m_CurrentFrame = m_parent->m_FrameRangeStart;
+    m_parent->m_RepeatFirstFramePlayed = 0;
     m_parent->LoadMemory();
   }
 
@@ -271,6 +272,35 @@ private:
 
 CPU::State FifoPlayer::AdvanceFrame()
 {
+  // If configured, repeatedly play the first frame and then exit without advancing.
+  if (m_RepeatFirstFrameCount > 0)
+  {
+    if (m_RepeatFirstFramePlayed > m_RepeatFirstFrameCount)
+      return CPU::State::PowerDown;
+
+    // Ensure we always render the first frame in the configured range.
+    m_CurrentFrame = m_FrameRangeStart;
+
+    // For repeats after the first, reset GPU state similarly to normal looping.
+    if (m_RepeatFirstFramePlayed > 0)
+    {
+      LoadRegisters();
+      LoadTextureMemory();
+      FlushWGP();
+    }
+
+    if (m_FrameWrittenCb)
+      m_FrameWrittenCb();
+
+    if (m_EarlyMemoryUpdates && m_RepeatFirstFramePlayed == 0)
+      WriteAllMemoryUpdates();
+
+    WriteFrame(m_File->GetFrame(m_CurrentFrame), m_FrameInfo[m_CurrentFrame]);
+
+    ++m_RepeatFirstFramePlayed;
+    return CPU::State::Running;
+  }
+
   if (m_CurrentFrame > m_FrameRangeEnd)
   {
     if (!m_Loop)
@@ -309,6 +339,7 @@ void FifoPlayer::RefreshConfig()
 {
   m_Loop = Config::Get(Config::MAIN_FIFOPLAYER_LOOP_REPLAY);
   m_EarlyMemoryUpdates = Config::Get(Config::MAIN_FIFOPLAYER_EARLY_MEMORY_UPDATES);
+  m_RepeatFirstFrameCount = Config::Get(Config::MAIN_FIFOPLAYER_REPEAT_FIRST_FRAME_COUNT);
 }
 
 void FifoPlayer::SetFileLoadedCallback(CallbackFunc callback)
