@@ -338,6 +338,40 @@ void StateTracker::BeginClearRenderPass(const VkRect2D& area, const VkClearValue
   m_current_render_pass = m_framebuffer->GetClearRenderPass();
   m_framebuffer_render_area = area;
 
+  if (m_framebuffer->HasColorBuffer()) {
+    VKTexture* color_attachment = static_cast<VKTexture*>(m_framebuffer->GetColorAttachment());
+    VkImageMemoryBarrier imgBarrier{};
+    imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    imgBarrier.image = color_attachment->GetImage();
+    imgBarrier.oldLayout = color_attachment->GetLayout();
+    imgBarrier.newLayout = color_attachment->GetLayout();
+    imgBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    imgBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    imgBarrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+
+    vkCmdPipelineBarrier(g_command_buffer_mgr->GetCurrentCommandBuffer(),
+                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr,
+                         1, &imgBarrier);
+  }
+
+  if (m_framebuffer->HasDepthBuffer()) {
+    VKTexture* depth_attachment = static_cast<VKTexture*>(m_framebuffer->GetDepthAttachment());
+    VkImageMemoryBarrier imgBarrier{};
+    imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    imgBarrier.image = depth_attachment->GetImage();
+    imgBarrier.oldLayout = depth_attachment->GetLayout();
+    imgBarrier.newLayout = depth_attachment->GetLayout();
+    imgBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    imgBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    imgBarrier.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
+
+    vkCmdPipelineBarrier(g_command_buffer_mgr->GetCurrentCommandBuffer(),
+                         VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                         VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                         0, 0, nullptr, 0, nullptr, 1, &imgBarrier);
+  }
+
   VkRenderPassBeginInfo begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
                                       nullptr,
                                       m_current_render_pass,
@@ -376,7 +410,7 @@ bool StateTracker::Bind()
 
   // Check the render area if we were in a clear pass.
   if (m_current_render_pass == m_framebuffer->GetClearRenderPass() && !IsViewportWithinRenderArea())
-    EndRenderPass();
+    EndClearRenderPass();
 
   // Get a new descriptor set if any parts have changed
   UpdateDescriptorSet();
@@ -463,6 +497,40 @@ void StateTracker::EndClearRenderPass()
   // End clear render pass. Bind() will call BeginRenderPass() which
   // will switch to the load/store render pass.
   EndRenderPass();
+
+  if (m_framebuffer->HasColorBuffer()) {
+    VKTexture* color_attachment = static_cast<VKTexture*>(m_framebuffer->GetColorAttachment());
+    VkImageMemoryBarrier imgBarrier{};
+    imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    imgBarrier.image = color_attachment->GetImage();
+    imgBarrier.oldLayout = color_attachment->GetLayout();
+    imgBarrier.newLayout = color_attachment->GetLayout();
+    imgBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    imgBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    imgBarrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+
+    vkCmdPipelineBarrier(g_command_buffer_mgr->GetCurrentCommandBuffer(),
+                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr,
+                         1, &imgBarrier);
+  }
+
+  if (m_framebuffer->HasDepthBuffer()) {
+    VKTexture* depth_attachment = static_cast<VKTexture*>(m_framebuffer->GetDepthAttachment());
+    VkImageMemoryBarrier imgBarrier{};
+    imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    imgBarrier.image = depth_attachment->GetImage();
+    imgBarrier.oldLayout = depth_attachment->GetLayout();
+    imgBarrier.newLayout = depth_attachment->GetLayout();
+    imgBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    imgBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    imgBarrier.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
+
+    vkCmdPipelineBarrier(g_command_buffer_mgr->GetCurrentCommandBuffer(),
+                         VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                         VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                         0, 0, nullptr, 0, nullptr, 1, &imgBarrier);
+  }
 }
 
 void StateTracker::UpdateDescriptorSet()
